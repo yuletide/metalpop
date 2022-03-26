@@ -22,7 +22,7 @@ case $DATASET in
 esac
 
 ! [[ $GADM_DIR_PATH ]] && $GADM_DIR_PATH="gadm"
-! [[ $GADM_BASENAME ]] && GADM_ZIP_PATH="$GADM_DIR_PATH/${basename $ZIP_URL}"
+! [[ $GADM_BASENAME ]] && $GADM_ZIP_PATH="$GADM_DIR_PATH/$(basename $ZIP_URL)"
 
 if ![ -f $GADM_ZIP_PATH ]; then
     echo "Downloading $GADM_ZIP_PATH "
@@ -30,6 +30,7 @@ if ![ -f $GADM_ZIP_PATH ]; then
 else
     echo "$GADM_ZIP_PATH already downloaded"
 fi
+
 
 echo "Unzipping $GADM_ZIP_PATH"
 unzip -d $GADM_DIR_PATH $GADM_ZIP_PATH
