@@ -9,10 +9,7 @@ SELECT
  	SUM(adminpop.UN_2015_E) AS pop_2015,
 	SUM(adminpop.UN_2020_E) AS pop_2020
 FROM (ne_admin1 a1
-	JOIN gpw_points adminpop ON ST_CONTAINS (a1.geom,
-		ST_SetSRID (ST_Point (adminpop.INSIDE_X,
-				adminpop.INSIDE_Y),
-			4326)))
+	JOIN gpw_points adminpop ON ST_CONTAINS (a1.geom, adminpop.geom_inside)
 GROUP BY
 	a1.ne_id,
 	a1.area_sqkm

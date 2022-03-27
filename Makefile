@@ -2,11 +2,13 @@
 
 test: admin_pop_test
 all: admin_pop
-# fields = UN_2000_E,UN_2005_E,UN_2020_E,TOTAL_A_KM j
+fields = NAME1,UN_2000_E,UN_2020_E,TOTAL_A_KM,INSIDE_X,INSIDE_Y
 # sumfields = 
 
 admin_pop:
-	ogr2ogr -f "ESRI Shapefile" temp/sedac_global.shp \
+	mkdir -p temp
+	ogr2ogr -select $(fields) \
+		-f "ESRI Shapefile" temp/sedac_global.shp \
 		sedac/gpw-v4-admin-unit-center-points-population-estimates-rev11_global_gpkg/gpw_v4_admin_unit_center_points_population_estimates_rev11_global.gpkg
 	mapshaper-xl -i temp/sedac_global.shp \
 		-points x=INSIDE_X y=INSIDE_Y \
@@ -18,7 +20,8 @@ admin_pop:
 	# rm -rf temp/
 
 admin_pop_oceania:
-	ogr2ogr -f "ESRI Shapefile" temp/sedac_oceania.shp \
+	ogr2ogr -sql "SELECT geom, UN_2000_E, UN_2020_E, INSIDE_X || ' ' || INSIDE_Y as inside from gpw_v4_admin_unit_center_points_population_estimates_rev11_oceania" \
+		-f "ESRI Shapefile" temp/sedac_oceania.shp \
 		sedac/gpw-v4-admin-unit-center-points-population-estimates-rev11_oceania_gpkg/gpw_v4_admin_unit_center_points_population_estimates_rev11_oceania.gpkg
 	mapshaper -i temp/sedac_oceania.shp \
 		-points x=INSIDE_X y=INSIDE_Y \
