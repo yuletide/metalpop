@@ -78,5 +78,7 @@ psql $DB_NAME -c 'CREATE INDEX gow_geom_idx ON gpw USING GIST (geom);'
 
 echo "creating geom_inside field for more reliable join"
 psql $DB_NAME -f sql/0_create_geom_inside.sql
+psql $DB_NAME -f sql/ne_gpw.sql
+
 
 echo "running spatial join of SEDAC against Admin units"
