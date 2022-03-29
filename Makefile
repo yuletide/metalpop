@@ -9,23 +9,7 @@ admin_pop:
 	mkdir -p temp
 	ogr2ogr -select $(fields) \
 		-f "ESRI Shapefile" temp/sedac_global.shp \
-		sedac/gpw-v4-admin-unit-center-points-population-estimates-rev11_global_gpkg/gpw_v4_admin_unit_center_points_population_estimates_rev11_global.gpkg
-	ogr2ogr -select $(fields) \
-		-f "ESRI Shapefile" temp/sedac_global.shp \
-		-append \
-		sedac/gpw-v4-admin-unit-center-points-population-estimates-rev11_global_gpkg/gpw_v4_admin_unit_center_points_population_estimates_rev11_usa_midwest.gpkg
-	ogr2ogr -select $(fields) \
-		-f "ESRI Shapefile" temp/sedac_global.shp \
-		-append \
-		sedac/gpw-v4-admin-unit-center-points-population-estimates-rev11_global_gpkg/gpw_v4_admin_unit_center_points_population_estimates_rev11_usa_northeast.gpkg
-	ogr2ogr -select $(fields) \
-		-f "ESRI Shapefile" temp/sedac_global.shp \
-		-append \
-		sedac/gpw-v4-admin-unit-center-points-population-estimates-rev11_global_gpkg/gpw_v4_admin_unit_center_points_population_estimates_rev11_usa_south.gpkg
-	ogr2ogr -select $(fields) \
-		-f "ESRI Shapefile" temp/sedac_global.shp \
-		-append \
-		sedac/gpw-v4-admin-unit-center-points-population-estimates-rev11_global_gpkg/gpw_v4_admin_unit_center_points_population_estimates_rev11_usa_west.gpkg
+		sedac/gpw-v4-admin-unit-center-points-population-estimates-rev11_global_gpkg.vrt
 	mapshaper-xl -i temp/sedac_global.shp \
 		-points x=INSIDE_X y=INSIDE_Y \
 		-o temp/sedac_inside.shp

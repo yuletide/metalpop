@@ -1,0 +1,22 @@
+<OGRVRTDataSource>
+    <OGRVRTLayer name="global">
+        <SrcDataSource relativeToVRT="1">gpw-v4-admin-unit-center-points-population-estimates-rev11_global_gpkg/gpw_v4_admin_unit_center_points_population_estimates_rev11_global.gpkg</SrcDataSource>
+        <SrcLayer>gpw_v4_admin_unit_center_points_population_estimates_rev11_global</SrcLayer>
+    </OGRVRTLayer>
+    <OGRVRTLayer name="midwest">
+        <SrcDataSource relativeToVRT="1">gpw-v4-admin-unit-center-points-population-estimates-rev11_global_gpkg/gpw_v4_admin_unit_center_points_population_estimates_rev11_usa_midwest.gpkg</SrcDataSource>
+        <SrcLayer>gpw_v4_admin_unit_center_points_population_estimates_rev11_usa_midwest</SrcLayer>
+    </OGRVRTLayer>
+    <OGRVRTLayer name="northeast">
+        <SrcDataSource relativeToVRT="1">gpw-v4-admin-unit-center-points-population-estimates-rev11_global_gpkg/gpw_v4_admin_unit_center_points_population_estimates_rev11_usa_northeast.gpkg</SrcDataSource>
+        <SrcLayer>gpw_v4_admin_unit_center_points_population_estimates_rev11_usa_northeast</SrcLayer>
+    </OGRVRTLayer>
+    <OGRVRTLayer name="south">
+        <SrcDataSource relativeToVRT="1">gpw-v4-admin-unit-center-points-population-estimates-rev11_global_gpkg/gpw_v4_admin_unit_center_points_population_estimates_rev11_usa_south.gpkg</SrcDataSource>
+        <SrcLayer>gpw_v4_admin_unit_center_points_population_estimates_rev11_usa_south</SrcLayer>
+    </OGRVRTLayer>
+    <OGRVRTLayer name="west">
+        <SrcDataSource relativeToVRT="1">gpw-v4-admin-unit-center-points-population-estimates-rev11_global_gpkg/gpw_v4_admin_unit_center_points_population_estimates_rev11_usa_west.gpkg</SrcDataSource>
+        <SrcLayer>gpw_v4_admin_unit_center_points_population_estimates_rev11_usa_west</SrcLayer>
+    </OGRVRTLayer>
+</OGRVRTDataSource>
