@@ -2,7 +2,7 @@
 
 test: admin_pop_test
 all: admin_pop
-fields = NAME1,UN_2000_E,UN_2020_E,TOTAL_A_KM,INSIDE_X,INSIDE_Y
+fields = NAME1,UN_2000_E,UN_2005_E,UN_2020_E,TOTAL_A_KM,INSIDE_X,INSIDE_Y
 # sumfields = 
 
 admin_pop:
@@ -10,6 +10,22 @@ admin_pop:
 	ogr2ogr -select $(fields) \
 		-f "ESRI Shapefile" temp/sedac_global.shp \
 		sedac/gpw-v4-admin-unit-center-points-population-estimates-rev11_global_gpkg/gpw_v4_admin_unit_center_points_population_estimates_rev11_global.gpkg
+	ogr2ogr -select $(fields) \
+		-f "ESRI Shapefile" temp/sedac_global.shp \
+		-append \
+		sedac/gpw-v4-admin-unit-center-points-population-estimates-rev11_global_gpkg/gpw_v4_admin_unit_center_points_population_estimates_rev11_usa_midwest.gpkg
+	ogr2ogr -select $(fields) \
+		-f "ESRI Shapefile" temp/sedac_global.shp \
+		-append \
+		sedac/gpw-v4-admin-unit-center-points-population-estimates-rev11_global_gpkg/gpw_v4_admin_unit_center_points_population_estimates_rev11_usa_northeast.gpkg
+	ogr2ogr -select $(fields) \
+		-f "ESRI Shapefile" temp/sedac_global.shp \
+		-append \
+		sedac/gpw-v4-admin-unit-center-points-population-estimates-rev11_global_gpkg/gpw_v4_admin_unit_center_points_population_estimates_rev11_usa_south.gpkg
+	ogr2ogr -select $(fields) \
+		-f "ESRI Shapefile" temp/sedac_global.shp \
+		-append \
+		sedac/gpw-v4-admin-unit-center-points-population-estimates-rev11_global_gpkg/gpw_v4_admin_unit_center_points_population_estimates_rev11_usa_west.gpkg
 	mapshaper-xl -i temp/sedac_global.shp \
 		-points x=INSIDE_X y=INSIDE_Y \
 		-o temp/sedac_inside.shp
@@ -20,7 +36,10 @@ admin_pop:
 	# rm -rf temp/
 
 admin_pop_oceania:
-	ogr2ogr -sql "SELECT geom, UN_2000_E, UN_2020_E, INSIDE_X || ' ' || INSIDE_Y as inside from gpw_v4_admin_unit_center_points_population_estimates_rev11_oceania" \
+	# ogr2ogr -sql "SELECT geom, UN_2000_E, UN_2020_E, INSIDE_X || ' ' || INSIDE_Y as inside from gpw_v4_admin_unit_center_points_population_estimates_rev11_oceania" \
+	# 	-f "ESRI Shapefile" temp/sedac_oceania.shp \
+	# 	sedac/gpw-v4-admin-unit-center-points-population-estimates-rev11_oceania_gpkg/gpw_v4_admin_unit_center_points_population_estimates_rev11_oceania.gpkg
+	ogr2ogr -select $(fields) \
 		-f "ESRI Shapefile" temp/sedac_oceania.shp \
 		sedac/gpw-v4-admin-unit-center-points-population-estimates-rev11_oceania_gpkg/gpw_v4_admin_unit_center_points_population_estimates_rev11_oceania.gpkg
 	mapshaper -i temp/sedac_oceania.shp \
@@ -41,9 +60,17 @@ admin_pop_test:
 	 -join temp/sedac_inside.shp \
 	 sum-fields="UN_2000_E,UN_2005_E,UN_2020_E,TOTAL_A_KM" \
 	 -o output/ne_10m_admin_1_pop_finland.shp
-	rm -rf temp/
+	# rm -rf temp/
 		
 get_natural_earth:
 	wget --directory-prefix=naturalearth \
 		https://www.naturalearthdata.com/http//www.naturalearthdata.com/download/10m/cultural/ne_10m_admin_1_states_provinces.zip
 	unzip naturalearth/ne_10m_admin_1_states_provinces.zip -d naturalearth/
+
+admin_bands:
+	mapshaper -i output/ne_10m_admin_1_pop.shp\
+	 -join bands/bands_ogr.shp \
+	 calc 'bands_count=count()' \
+	 -each 'bands_per = bands_count / UN_2020_E' \
+	 -o output/ne_10m_admin_1_bands.shp
+	
