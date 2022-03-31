@@ -10,13 +10,13 @@ west_csv = sedac/gpw-v4-admin-unit-center-points-population-estimates-rev11_glob
 # sql = SELECT $fields 
 
 csv:
-		# import all gpw csv layers and combine into one point shapefile 
-		mapshaper-xl -i "sedac/gpw-v4-admin-unit-center-points-population-estimates-rev11_global_csv/*.csv" \
-		combine-files \
-		csv-fields=INSIDE_X,INSIDE_Y,UN_2020_E \
-		-merge-layers \
-		-points x=INSIDE_X y=INSIDE_Y \
-		-o temp/points-csv.shp
+	# import all gpw csv layers and combine into one point shapefile 
+	mapshaper-xl -i "sedac/gpw-v4-admin-unit-center-points-population-estimates-rev11_global_csv/*.csv" \
+	combine-files \
+	csv-fields=INSIDE_X,INSIDE_Y,UN_2020_E \
+	-merge-layers \
+	-points x=INSIDE_X y=INSIDE_Y \
+	-o temp/sedac_inside.shp
 
 
 merge_gpkg:
@@ -47,23 +47,15 @@ merge_gpkg:
 
 admin_pop:
 	mkdir -p temp
-	# possible paths for this: 1 merge shapefiles into one keeping all fields
-	# 1b use annoying -fieldmap, untenable with the long list of attributes in this input data. Try -sql instead?
-	# 1c merge to one gpkg, then run the shp conversion for mapshaper
-	# 2 Write ogr2ogr query with sql to do everything
-	# 3 Go back to postgres
-	# So close and yet... so far
-	ogr2ogr -select $(fields) \
-		-f "ESRI Shapefile" temp/sedac_global.shp \
-		temp/sedac_merge.gpkg
-	mapshaper-xl -i temp/sedac_global.shp \
-		-points x=INSIDE_X y=INSIDE_Y \
-		-o temp/sedac_inside.shp
+	csv
+	mapshaper_join
+	# rm -rf temp/
+
+mapshaper_join:
 	mapshaper-xl -i naturalearth/ne_10m_admin_1_states_provinces.shp \
-	 -join temp/sedac_inside.shp \
+	 -join temp/points-csv.shp \
 	 sum-fields="UN_2000_E,UN_2005_E,UN_2020_E,TOTAL_A_KM" \
 	 -o output/ne_10m_admin_1_pop.shp
-	# rm -rf temp/
 	
 admin_pop_oceania:
 	# ogr2ogr -sql "SELECT geom, UN_2000_E, UN_2020_E, MakePoint(INSIDE_X, INSIDE_Y) as inside_geom from gpw_v4_admin_unit_center_points_population_estimates_rev11_oceania" \
@@ -102,5 +94,6 @@ admin_bands:
 	 -join bands/bands_ogr.shp \
 	 calc 'bands_count=count()' \
 	 -each 'bands_per = bands_count / UN_2020_E' \
+	 -each 'bands_p100 = 100000 * bands_count / UN_2020_E' \
 	 -o output/ne_10m_admin_1_bands.shp
 	
