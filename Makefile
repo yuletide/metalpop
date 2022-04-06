@@ -2,6 +2,7 @@
 
 test: admin_pop_test
 all: admin_pop
+all_bands: admin_pop admin_bands mts_tiles
 fields = NAME1,UN_2020_E,TOTAL_A_KM,INSIDE_X,INSIDE_Y
 northeast_csv = sedac/gpw-v4-admin-unit-center-points-population-estimates-rev11_global_csv/gpw_v4_admin_unit_center_points_population_estimates_rev11_usa_northeast.csv
 midwest_csv = sedac/gpw-v4-admin-unit-center-points-population-estimates-rev11_global_csv/gpw_v4_admin_unit_center_points_population_estimates_rev11_usa_midwest.csv
@@ -96,4 +97,23 @@ admin_bands:
 	 -each 'bands_per = bands_count / UN_2020_E' \
 	 -each 'bands_p100 = 100000 * bands_count / UN_2020_E' \
 	 -o output/ne_10m_admin_1_bands.shp
+
+
+# https://github.com/mapbox/tilesets-cli
+mts_tiles:
+	ogr2ogr -F GeoJSON temp/ne_10m_admin_1_bands.geojson output/ne_10m_admin_1_bands.shp
+	tilesets upload-source $(MAPBOX_USER) ne_10m_admin_1_bands temp/ne_10m_admin_1_bands.geojson \
+		--replace \
+		--token $(MAPBOX_SECRET_TOKEN)
+	tilesets create $(MAPBOX_USER).ne_bands_percapita \
+		--recipe mts/recipe.json \
+		--name "Metal Bands Per Capita Natural Earth" \
+		--token $(MAPBOX_SECRET_TOKEN)
+	tilesets update-recipe $(MAPBOX_USER).ne_bands_percapita mts/recipe.json \
+		--token $(MAPBOX_SECRET_TOKEN)
+	tilesets publish $(MAPBOX_USER).ne_bands_percapita \
+		--token $(MAPBOX_SECRET_TOKEN)
+
+
+
 	
