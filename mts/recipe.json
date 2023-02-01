@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "layers": {
+    "bands_per_capita": {
+      "source": "mapbox://tileset-source/yuletide/ne_10m_admin_1_bands",
+      "minzoom": 0,
+      "maxzoom": 8,
+      "tiles": {
+        "layer_size": 2500
+      },
+      "features": {
+        "attributes": {
+          "allowed_output": ["FCLASS_US", "TOTAL_A_KM", "UN_2020_E", "admin", "adm1_code", "bands_coun", "bands_p100", "name", "iso_3166_2", "iso_a2"]
+        }
+      }
+    }
+  }
+}
