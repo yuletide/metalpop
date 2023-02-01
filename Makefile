@@ -19,7 +19,7 @@ csv:
 	-points x=INSIDE_X y=INSIDE_Y \
 	-o temp/sedac_inside.shp
 
-
+# Obsolete workflow 
 merge_gpkg:
 	# ogr2ogr \
 	# 	-f "gpkg" temp/sedac_merge.gpkg \
@@ -50,7 +50,7 @@ admin_pop:
 	mkdir -p temp
 	csv
 	mapshaper_join
-	# rm -rf temp/
+	rm -rf temp/
 
 mapshaper_join:
 	mapshaper-xl -i naturalearth/ne_10m_admin_1_states_provinces.shp \
