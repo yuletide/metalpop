@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Temporary files
+temp/
+tmp/
+*.tmp
+
+# Output files
+output/
+
+# Data directories (large files, should be downloaded separately)
+sedac/
+naturalearth/
+bands/
+gadm/
+
+# QGIS files
+*.qgz~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+*.swp
+*.swo
+*~
+.vscode/
+.idea/

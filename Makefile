@@ -1,6 +1,11 @@
 # https://github.com/nvkelso/natural-earth-vector/blob/master/Makefile#L457-L481
 
 test: admin_pop_test
+test_python: test_merge_regions
+
+test_merge_regions:
+	python3 test_merge_regions.py
+
 all: admin_pop
 all_bands: admin_pop admin_bands mts_tiles
 fields = NAME1,UN_2020_E,TOTAL_A_KM,INSIDE_X,INSIDE_Y
@@ -48,13 +53,24 @@ merge_gpkg:
 
 admin_pop:
 	mkdir -p temp
+	mkdir -p output
 	csv
+	merge_regions
 	mapshaper_join
 	rm -rf temp/
 
+merge_regions:
+	# Merge configured administrative regions (e.g., London boroughs)
+	# This creates a preprocessed shapefile with merged boundaries
+	python3 merge_regions.py \
+		naturalearth/ne_10m_admin_1_states_provinces.shp \
+		temp/ne_10m_admin_1_merged.shp \
+		region_merges.json \
+		"UN_2000_E,UN_2005_E,UN_2020_E,TOTAL_A_KM"
+
 mapshaper_join:
-	mapshaper-xl -i naturalearth/ne_10m_admin_1_states_provinces.shp \
-	 -join temp/points-csv.shp \
+	mapshaper-xl -i temp/ne_10m_admin_1_merged.shp \
+	 -join temp/sedac_inside.shp \
 	 sum-fields="UN_2000_E,UN_2005_E,UN_2020_E,TOTAL_A_KM" \
 	 -o output/ne_10m_admin_1_pop.shp
 	
