@@ -1,0 +1,47 @@
+# Temporary directories
+temp/
+tmp/
+/tmp/
+
+# Test artifacts
+/tests/test_output/
+*.test
+*.log
+
+# Data files (large binary files)
+*.zip
+*.gpkg
+*.shp
+*.shx
+*.dbf
+*.prj
+*.cpg
+*.qpj
+
+# Output directory
+output/
+
+# Node modules if using npm for mapshaper
+node_modules/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# PostgreSQL
+*.sql.backup
+
+# GDAL temp files
+*.aux.xml

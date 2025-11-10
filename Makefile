@@ -1,6 +1,9 @@
 # https://github.com/nvkelso/natural-earth-vector/blob/master/Makefile#L457-L481
 
-test: admin_pop_test
+test: test_pipeline admin_pop_test
+test_pipeline:
+	@echo "Running pipeline tests..."
+	@bash tests/run_tests.sh
 all: admin_pop
 all_bands: admin_pop admin_bands mts_tiles
 fields = NAME1,UN_2020_E,TOTAL_A_KM,INSIDE_X,INSIDE_Y
