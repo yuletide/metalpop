@@ -95,6 +95,68 @@ make admin_pop
 
 ## How It Works
 
+### Workflow Diagram
+
+```
+Original Workflow (with MAUP issue):
+┌──────────────────┐
+│ Natural Earth    │
+│ Admin-1 Shapes   │  ← Has London boroughs as separate regions
+└────────┬─────────┘
+         │
+         ↓ mapshaper join
+┌────────┴─────────┐
+│ Population Data  │  ← Population correctly distributed
+│ (SEDAC GPW)      │
+└────────┬─────────┘
+         │
+         ↓ mapshaper join
+┌────────┴─────────┐
+│ Band Locations   │  ← All "London" bands → Kensington centroid
+└────────┬─────────┘
+         │
+         ↓ calculate per-capita
+┌────────┴─────────┐
+│ Kensington:      │  ⚠️ MAUP ISSUE
+│ 1000+ bands      │     All London bands counted
+│ / 150k pop       │     Only Kensington population used
+│ = VERY HIGH      │     Result: Artificially inflated rate
+└──────────────────┘
+
+New Workflow (with region merging):
+┌──────────────────┐
+│ Natural Earth    │
+│ Admin-1 Shapes   │
+└────────┬─────────┘
+         │
+         ↓ merge_regions.py
+┌────────┴─────────┐
+│ Merged Shapes    │  ← London boroughs → Greater London
+│ (Greater London) │
+└────────┬─────────┘
+         │
+         ↓ mapshaper join
+┌────────┴─────────┐
+│ Population Data  │  ← Population summed for Greater London
+│ (SEDAC GPW)      │
+└────────┬─────────┘
+         │
+         ↓ mapshaper join
+┌────────┴─────────┐
+│ Band Locations   │  ← All "London" bands → Greater London
+└────────┬─────────┘
+         │
+         ↓ calculate per-capita
+┌────────┴─────────┐
+│ Greater London:  │  ✓ Correct calculation
+│ 1000+ bands      │     All London bands counted
+│ / 9M pop         │     All Greater London population used
+│ = accurate rate  │     Result: Accurate per-capita rate
+└──────────────────┘
+```
+
+### Technical Steps
+
 1. **Input**: Natural Earth Admin-1 shapefile with original boundaries
 2. **Processing**: 
    - Script adds a `merge_group` field to each feature
@@ -164,6 +226,23 @@ This solution is designed to be extended to:
 - Different administrative levels (Admin-0, Admin-2)
 - Other vector data sources (GADM, custom boundaries)
 - Statistical detection of MAUP anomalies (future enhancement)
+
+## Testing
+
+The solution includes unit tests to verify the logic:
+
+```bash
+python3 test_merge_regions.py
+```
+
+Tests cover:
+- Configuration file loading
+- London borough configuration validation
+- Mapshaper expression generation
+- Custom merge field support
+- Multiple merge group handling
+
+All tests pass without requiring mapshaper to be installed, as they test the Python logic in isolation.
 
 ## Future Enhancements
 
