@@ -28,4 +28,5 @@ Configure region merges in `region_merges.json`. See [REGION_MERGING.md](REGION_
 - `make all_bands`: same as `make all` but with the added step of joining band data and tiling the results using Mapbox Tiling Service
 - `make csv`: Import regional GPW centroid CSV files and merge into one giant globalshapefile, using `INSIDE_X` and `INSIDE_Y` to create point geometries
 - `make merge_regions`: Merge administrative regions based on `region_merges.json` configuration
+- `make test_merge_regions`: Run unit tests for the region merging functionality
 - `make get_natural_earth`: download natural earth vector data
