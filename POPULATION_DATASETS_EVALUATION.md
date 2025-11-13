@@ -4,6 +4,14 @@
 
 This document evaluates alternative global population datasets to replace SEDAC GPW v4 (Gridded Population of the World version 4) following the discontinuation of SEDAC funding. The evaluation focuses on coverage, accuracy, recency, and suitability for joining with global political boundaries.
 
+**⚠️ Critical Finding:** All modern, actively maintained population datasets are **raster-based**, requiring a complete pipeline rewrite from GPW's admin centroid point format. There is no "drop-in replacement" that maintains GPW's data format while providing current updates.
+
+**Key Trade-off:** 
+- Accept major pipeline rewrite → Access to current, high-quality data (WorldPop, GHS-POP)
+- Keep existing pipeline → Use outdated GPW v4.11 + UN projections (pragmatic short-term solution)
+
+See [Conclusion & Recommendations](#conclusion--recommendations) for detailed options based on project priorities.
+
 ## Current Dataset: SEDAC GPW v4
 
 **Overview:**
@@ -412,9 +420,11 @@ This document evaluates alternative global population datasets to replace SEDAC 
 
 ## Recommended Alternatives
 
-### Tier 1 Recommendations (Best Options)
+⚠️ **Note:** All options below except "GPW v4.11 with custom updates" require a complete data pipeline rewrite from point-based to raster processing. See [Critical Consideration](#critical-consideration-pipeline-rewrite-requirements) section for details.
 
-#### 1. **WorldPop (Constrained Top-Down)** - PRIMARY RECOMMENDATION
+### Tier 1 Recommendations (Best Data Quality - Requires Pipeline Rewrite)
+
+#### 1. **WorldPop (Constrained Top-Down)** - BEST DATA QUALITY
 
 **Why:**
 - ✅ Actively maintained with annual updates
@@ -426,9 +436,10 @@ This document evaluates alternative global population datasets to replace SEDAC 
 - ✅ Excellent documentation and support
 
 **Challenges:**
-- ⚠️ Raster format requires conversion to admin centroids
+- ❌ **MAJOR: Complete pipeline rewrite required** (raster → admin centroids)
 - ⚠️ Processing overhead for large datasets
-- ⚠️ Different data model than GPW (requires workflow changes)
+- ⚠️ Different data model than GPW (fundamental workflow changes)
+- ⚠️ Ongoing maintenance for each data release
 
 **Implementation Path:**
 1. Download country-level constrained WorldPop datasets
@@ -437,7 +448,7 @@ This document evaluates alternative global population datasets to replace SEDAC 
 4. Generate point file similar to GPW format
 5. Update Makefile to handle WorldPop data
 
-**Estimated Effort:** Medium (requires new processing pipeline)
+**Estimated Effort:** High (2-4 weeks for experienced GIS developer, ongoing maintenance)
 
 ---
 
@@ -452,7 +463,7 @@ This document evaluates alternative global population datasets to replace SEDAC 
 - ✅ Part of comprehensive settlement ecosystem
 
 **Challenges:**
-- ⚠️ Raster format requires conversion
+- ❌ **MAJOR: Complete pipeline rewrite required** (raster → admin centroids)
 - ⚠️ Updates less frequent than WorldPop (2-3 years vs annual)
 - ⚠️ May underestimate rural populations
 
@@ -461,11 +472,11 @@ This document evaluates alternative global population datasets to replace SEDAC 
 - Could use 1km resolution for direct GPW replacement
 - Or use 100m for higher accuracy
 
-**Estimated Effort:** Medium (requires new processing pipeline)
+**Estimated Effort:** High (2-4 weeks for experienced GIS developer, ongoing maintenance)
 
 ---
 
-### Tier 2 Recommendations (Good Options with Caveats)
+### Tier 2 Recommendations
 
 #### 3. **LandScan** - HIGH QUALITY BUT LICENSED
 
@@ -477,6 +488,7 @@ This document evaluates alternative global population datasets to replace SEDAC 
 - ✅ Long-term U.S. government funding
 
 **Challenges:**
+- ❌ **MAJOR: Complete pipeline rewrite required** (raster → admin centroids)
 - ❌ License restrictions
 - ❌ Cannot redistribute
 - ❌ Ambient population vs residential (conceptual difference)
@@ -486,6 +498,35 @@ This document evaluates alternative global population datasets to replace SEDAC 
 - If the project is pure research
 - If license restrictions are acceptable
 - If highest quality and recency are priority
+- Still requires complete pipeline rewrite
+
+---
+
+### Tier 3: Pragmatic Option (Minimal Changes)
+
+#### 4. **GPW v4.11 + UN Population Projections** - MINIMAL PIPELINE CHANGES
+
+**Why:**
+- ✅ **ZERO pipeline changes** - uses existing GPW format
+- ✅ No new tools or processing required
+- ✅ Can generate 2021-2030 estimates quickly
+- ✅ UN WPP provides authoritative growth rates
+- ✅ Quick implementation (1-2 days)
+
+**Challenges:**
+- ❌ Not true updated data, only projections
+- ❌ Base data frozen at 2020
+- ❌ Cannot capture structural changes (new admin units, migrations, COVID impacts)
+- ❌ Accuracy degrades over time (5+ years out becomes unreliable)
+- ❌ Not sustainable long-term
+
+**When to Use:**
+- Short-term solution (2-3 years)
+- Limited development resources
+- Need functioning system while planning migration
+- GPW 2020 data still "recent enough" for use case
+
+**Implementation effort:** Low (1-2 days)
 
 ---
 
@@ -579,31 +620,108 @@ New workflow (raster-based):
 
 ---
 
-## Conclusion
+## Critical Consideration: Pipeline Rewrite Requirements
 
-**Primary Recommendation: WorldPop**
+**⚠️ IMPORTANT:** All modern high-quality population datasets (WorldPop, GHS-POP, LandScan) are **raster-based**, while the current metalpop pipeline is built around GPW's **admin centroid point format**. 
 
-WorldPop is the best alternative to SEDAC GPW v4 for the metalpop project:
+### Pipeline Rewrite Implications
 
-1. **Quality:** Excellent accuracy with modern ML methods and ancillary data
-2. **Recency:** Actively maintained with annual updates (most recent among alternatives)
-3. **Sustainability:** Well-funded with long-term commitment
-4. **Openness:** CC BY 4.0 license, no restrictions
-5. **Resolution:** Higher than GPW (100m vs 1km) for better accuracy
+**Converting from raster to admin centroids requires:**
+- Complete rewrite of data ingestion pipeline
+- New tools and processing steps (zonal statistics, raster aggregation)
+- Significantly increased processing time and storage requirements
+- Ongoing maintenance burden for each new data release
+- Need for spatial processing expertise
 
-**Secondary Recommendation: GHS-POP**
+**This is a major undertaking**, not a simple data source swap.
 
-GHS-POP is an excellent fallback or complementary option:
-- EU-funded program with strong commitment
-- Fully open with no restrictions
-- Part of comprehensive settlement data ecosystem
-- Multiple resolution options
+### The Fundamental Trade-off
 
-**Implementation Strategy:**
-1. Start with WorldPop for active, up-to-date data
-2. Consider GHS-POP as validation or alternative
-3. Maintain GPW v4.11 data temporarily for comparison
-4. Develop processing pipeline to convert raster to admin centroids
-5. Update workflow documentation
+There are **no actively maintained, high-quality alternatives** that provide data in GPW's admin centroid point format. The choice is essentially:
 
-The transition from GPW to WorldPop will require workflow changes, but the benefits of ongoing updates, higher resolution, and improved methodology make it worthwhile for long-term sustainability of the metalpop project.
+1. **Accept a pipeline rewrite** → Access to current, actively maintained datasets
+2. **Keep current pipeline** → Use increasingly outdated GPW v4.11 data (frozen at 2020)
+
+---
+
+## Conclusion & Recommendations
+
+Given the pipeline rewrite requirement, recommendations depend on project priorities:
+
+### Option A: If Data Currency is Critical (Recommended for Long-term)
+
+**Primary: WorldPop** (with pipeline rewrite)
+
+Best option IF willing to invest in pipeline changes:
+- ✅ Actively maintained with annual updates
+- ✅ Highest quality methodology
+- ✅ 2020+ data available
+- ✅ Long-term sustainability
+- ⚠️ **Requires complete pipeline rewrite**
+
+**Implementation effort:** High (2-4 weeks for experienced GIS developer)
+
+---
+
+### Option B: If Minimizing Changes is Critical (Pragmatic Short-term)
+
+**Primary: Continue with GPW v4.11 + UN Growth Rates**
+
+Use existing GPW v4.11 (2020) and apply UN WPP growth projections:
+
+**Pros:**
+- ✅ **Zero pipeline changes** - works with existing workflow
+- ✅ No learning curve or new tools needed
+- ✅ UN WPP provides authoritative growth rates
+- ✅ Can generate 2021-2025 estimates programmatically
+- ✅ Quick to implement (1-2 days)
+
+**Cons:**
+- ❌ Not true updated data, just projections
+- ❌ Cannot capture:
+  - New administrative boundaries
+  - Migration patterns
+  - Urban growth dynamics
+  - COVID-19 impacts
+- ❌ Accuracy degrades over time
+- ❌ Not sustainable beyond 5 years
+
+**Implementation approach:**
+```python
+# Pseudo-code for updating GPW with UN growth rates
+for each admin_unit in gpw_data:
+    country = admin_unit.country
+    un_growth_rate = get_un_growth_rate(country, 2020, 2025)
+    admin_unit.pop_2025 = admin_unit.pop_2020 * (1 + un_growth_rate)
+```
+
+**Use case:** Projects that need "good enough" data for 2-3 more years while GPW v4.11 is still relatively recent.
+
+---
+
+### Option C: Hybrid Approach
+
+**Phase 1 (Now):** Use GPW v4.11 + UN projections (no pipeline changes)
+**Phase 2 (6-12 months):** Develop raster processing pipeline for WorldPop
+**Phase 3 (12+ months):** Transition to WorldPop data
+
+This spreads the work and maintains functionality throughout.
+
+---
+
+## Final Recommendation
+
+**For projects that can invest in modernization:** WorldPop (Option A)
+- Best data quality and long-term sustainability
+- Requires significant development effort
+
+**For projects with limited resources:** GPW v4.11 + UN projections (Option B)
+- Pragmatic short-term solution (2-3 years)
+- Minimal effort, zero pipeline changes
+- Accept that data will become increasingly outdated
+
+**Reality check:** There is no "drop-in replacement" for GPW that maintains the admin centroid format with active updates. Any move to current data requires either:
+1. Accepting a major pipeline rewrite (raster processing), or
+2. Accepting outdated data (GPW v4.11 + projections)
+
+The metalpop project needs to decide which trade-off aligns with its priorities and resources.
