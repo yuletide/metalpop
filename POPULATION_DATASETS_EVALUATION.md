@@ -668,6 +668,303 @@ Alternate workflow (raster-based):
 - WorldPop 100m country → admin units: ~10-30 min per country
 - With parallelization: Process all countries in ~4-8 hours
 
+### Parallelization Approaches
+
+**Recommended: Country-level Parallelization**
+
+The most effective parallelization strategy is to process countries independently since WorldPop provides country-specific files and admin boundaries are naturally partitioned by country.
+
+**Option 1: Python Multiprocessing (Simple, No Dependencies)**
+
+Best for: Simple parallelization without additional dependencies
+
+```python
+from multiprocessing import Pool
+import rasterstats
+import geopandas as gpd
+import rasterio
+
+def process_country(country_code):
+    """Process a single country's raster data"""
+    # Load country-specific data
+    raster_path = f"worldpop/{country_code}_ppp_2020.tif"
+    admin_boundaries = gpd.read_file(f"admin/{country_code}_admin.shp")
+    
+    # Calculate zonal statistics
+    stats = rasterstats.zonal_stats(
+        admin_boundaries.geometry,
+        raster_path,
+        stats=['sum'],
+        nodata=0
+    )
+    
+    # Add population to boundaries
+    admin_boundaries['population'] = [s['sum'] for s in stats]
+    
+    # Save result
+    admin_boundaries.to_file(f"output/{country_code}_result.shp")
+    return country_code
+
+if __name__ == '__main__':
+    countries = ['USA', 'CAN', 'MEX', 'BRA', 'ARG', ...]  # All countries
+    
+    # Process in parallel using all CPU cores
+    with Pool() as pool:
+        results = pool.map(process_country, countries)
+    
+    print(f"Processed {len(results)} countries")
+```
+
+**Pros:**
+- ✅ Built into Python standard library
+- ✅ Simple to implement
+- ✅ Scales to all CPU cores
+- ✅ Good for country-level processing (200+ countries)
+
+**Cons:**
+- ⚠️ Limited to single machine
+- ⚠️ No distributed computing across multiple machines
+
+---
+
+**Option 2: Dask (Scalable, Flexible)**
+
+Best for: More complex workflows, distributed processing, or very large datasets
+
+```python
+import dask
+from dask.distributed import Client, LocalCluster
+import rasterstats
+import geopandas as gpd
+import dask.bag as db
+
+def process_country(country_code):
+    """Process a single country's raster data"""
+    raster_path = f"worldpop/{country_code}_ppp_2020.tif"
+    admin_boundaries = gpd.read_file(f"admin/{country_code}_admin.shp")
+    
+    stats = rasterstats.zonal_stats(
+        admin_boundaries.geometry,
+        raster_path,
+        stats=['sum'],
+        nodata=0
+    )
+    
+    admin_boundaries['population'] = [s['sum'] for s in stats]
+    admin_boundaries.to_file(f"output/{country_code}_result.shp")
+    return country_code
+
+if __name__ == '__main__':
+    # Set up Dask cluster
+    cluster = LocalCluster(n_workers=8, threads_per_worker=2)
+    client = Client(cluster)
+    
+    countries = ['USA', 'CAN', 'MEX', 'BRA', 'ARG', ...]
+    
+    # Create Dask bag and map processing function
+    bag = db.from_sequence(countries, partition_size=10)
+    results = bag.map(process_country).compute()
+    
+    print(f"Processed {len(results)} countries")
+    client.close()
+```
+
+**Pros:**
+- ✅ Can scale to multiple machines (distributed cluster)
+- ✅ Better monitoring and diagnostics (dashboard)
+- ✅ Can handle larger-than-memory datasets
+- ✅ Integrates well with scientific Python stack
+
+**Cons:**
+- ⚠️ Additional dependency (pip install dask distributed)
+- ⚠️ Slightly more complex setup
+- ⚠️ Overkill for simple country-level parallelization
+
+**When to use Dask:**
+- Processing global raster as single dataset (not country files)
+- Need to distribute across multiple machines
+- Working with larger-than-memory rasters
+- Want monitoring dashboard and better diagnostics
+
+---
+
+**Option 3: GNU Parallel (Shell-based)**
+
+Best for: Quick parallelization of existing scripts without code changes
+
+```bash
+#!/bin/bash
+# process_country.sh - Process single country
+COUNTRY=$1
+python3 - <<EOF
+import rasterstats
+import geopandas as gpd
+
+admin = gpd.read_file('admin/${COUNTRY}_admin.shp')
+stats = rasterstats.zonal_stats(admin.geometry, 
+                                  'worldpop/${COUNTRY}_ppp_2020.tif',
+                                  stats=['sum'])
+admin['population'] = [s['sum'] for s in stats]
+admin.to_file('output/${COUNTRY}_result.shp')
+print('Processed ${COUNTRY}')
+EOF
+
+# Run in parallel using GNU Parallel
+cat countries.txt | parallel -j 8 ./process_country.sh {}
+```
+
+**Pros:**
+- ✅ No Python code changes needed
+- ✅ Easy to understand and debug
+- ✅ Works with any existing scripts
+- ✅ Simple progress monitoring
+
+**Cons:**
+- ⚠️ Requires GNU Parallel installed
+- ⚠️ Less flexible than Python solutions
+- ⚠️ Harder to share data between processes
+
+---
+
+**Option 4: Makefile with Parallel Make**
+
+Best for: Integration with existing Makefile workflow
+
+```makefile
+# Get list of all countries
+COUNTRIES := USA CAN MEX BRA ARG ... (all countries)
+OUTPUTS := $(foreach country,$(COUNTRIES),output/$(country)_result.shp)
+
+# Process all countries in parallel
+.PHONY: all
+all: $(OUTPUTS)
+
+# Rule to process a single country
+output/%_result.shp: worldpop/%_ppp_2020.tif admin/%_admin.shp
+	python3 scripts/process_country.py $*
+
+# Run with: make -j 8 all
+```
+
+**Pros:**
+- ✅ Integrates with existing Makefile
+- ✅ Make handles dependency tracking
+- ✅ Simple parallelization with -j flag
+- ✅ Can resume if interrupted
+
+**Cons:**
+- ⚠️ Limited to single machine
+- ⚠️ Less dynamic than Python solutions
+
+---
+
+**Recommendation for metalpop:**
+
+**Use Python multiprocessing (Option 1)** for simplicity:
+
+```python
+# scripts/process_worldpop_parallel.py
+from multiprocessing import Pool
+import os
+import rasterstats
+import geopandas as gpd
+from pathlib import Path
+
+def process_country(country_info):
+    """Process a single country"""
+    country_code, raster_path, admin_path = country_info
+    
+    print(f"Processing {country_code}...")
+    
+    try:
+        # Load data
+        admin = gpd.read_file(admin_path)
+        
+        # Calculate population per admin unit
+        stats = rasterstats.zonal_stats(
+            admin.geometry,
+            raster_path,
+            stats=['sum'],
+            nodata=-99999
+        )
+        
+        admin['UN_2020_E'] = [s['sum'] if s['sum'] else 0 for s in stats]
+        
+        # Calculate centroids
+        admin['INSIDE_X'] = admin.geometry.centroid.x
+        admin['INSIDE_Y'] = admin.geometry.centroid.y
+        
+        # Save
+        output_path = f"temp/worldpop_{country_code}.shp"
+        admin[['NAME', 'UN_2020_E', 'INSIDE_X', 'INSIDE_Y', 'geometry']].to_file(output_path)
+        
+        return country_code, True, None
+    except Exception as e:
+        return country_code, False, str(e)
+
+if __name__ == '__main__':
+    # Discover all country files
+    worldpop_dir = Path("worldpop")
+    countries = []
+    
+    for raster_file in worldpop_dir.glob("*_ppp_2020.tif"):
+        country_code = raster_file.stem.split('_')[0]
+        admin_path = f"admin/{country_code}_admin.shp"
+        
+        if os.path.exists(admin_path):
+            countries.append((country_code, str(raster_file), admin_path))
+    
+    print(f"Found {len(countries)} countries to process")
+    
+    # Process in parallel (use all cores)
+    num_cores = os.cpu_count()
+    print(f"Using {num_cores} cores")
+    
+    with Pool(processes=num_cores) as pool:
+        results = pool.map(process_country, countries)
+    
+    # Report results
+    successful = [r for r in results if r[1]]
+    failed = [r for r in results if not r[1]]
+    
+    print(f"\nCompleted: {len(successful)}/{len(countries)} countries")
+    if failed:
+        print(f"Failed: {len(failed)}")
+        for country, _, error in failed:
+            print(f"  - {country}: {error}")
+```
+
+**Update Makefile:**
+
+```makefile
+worldpop_admin_parallel:
+	mkdir -p temp
+	python3 scripts/process_worldpop_parallel.py
+	# Merge all country results
+	mapshaper-xl -i "temp/worldpop_*.shp" \
+		combine-files \
+		-merge-layers \
+		-o temp/worldpop_global.shp
+	# Join to boundaries
+	mapshaper-xl -i naturalearth/ne_10m_admin_1_states_provinces.shp \
+		-join temp/worldpop_global.shp \
+		sum-fields="UN_2020_E" \
+		-o output/ne_10m_admin_1_pop_worldpop.shp
+	rm -rf temp/
+```
+
+**Performance Estimate with Parallelization:**
+- 8 cores: Process 200 countries in ~2-4 hours
+- 16 cores: Process 200 countries in ~1-2 hours
+- Nearly linear scaling up to number of countries
+
+**Use Dask only if:**
+- You need to process a single global raster (not country files)
+- You want to distribute across multiple machines
+- You need advanced monitoring/debugging
+
+For the metalpop use case, **multiprocessing is the sweet spot**: simple, effective, no extra dependencies.
+
 ---
 
 ## Critical Consideration: Raster vs Point-Based Data
