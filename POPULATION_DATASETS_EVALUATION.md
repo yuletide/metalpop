@@ -4,13 +4,15 @@
 
 This document evaluates alternative global population datasets to replace SEDAC GPW v4 (Gridded Population of the World version 4) following the discontinuation of SEDAC funding. The evaluation focuses on coverage, accuracy, recency, and suitability for joining with global political boundaries.
 
-**⚠️ Critical Finding:** All modern, actively maintained population datasets are **raster-based**, requiring a complete pipeline rewrite from GPW's admin centroid point format. There is no "drop-in replacement" that maintains GPW's data format while providing current updates.
+**⚠️ Critical Finding:** All modern, actively maintained population datasets are **raster-based**, requiring an alternate pipeline from GPW's admin centroid point format. There is no "drop-in replacement" that maintains GPW's data format while providing current updates.
 
-**Key Trade-off:** 
-- Accept major pipeline rewrite → Access to current, high-quality data (WorldPop, GHS-POP)
-- Keep existing pipeline → Use outdated GPW v4.11 + UN projections (pragmatic short-term solution)
+**Recommended Approach:** Build an **alternate raster-to-vector pipeline** for WorldPop or GHS-POP data:
+- Accept slower processing (2-8 hours for global processing, optimizable)
+- Gain access to actively maintained, high-quality current data
+- Can run once per year/data release and cache results
+- Keep existing GPW pipeline as fallback or legacy option
 
-See [Conclusion & Recommendations](#conclusion--recommendations) for detailed options based on project priorities.
+See [Conclusion & Recommendations](#conclusion--recommendations) for implementation roadmap and performance optimization strategies.
 
 ## Current Dataset: SEDAC GPW v4
 
@@ -420,11 +422,9 @@ See [Conclusion & Recommendations](#conclusion--recommendations) for detailed op
 
 ## Recommended Alternatives
 
-⚠️ **Note:** All options below except "GPW v4.11 with custom updates" require a complete data pipeline rewrite from point-based to raster processing. See [Critical Consideration](#critical-consideration-pipeline-rewrite-requirements) section for details.
+### Tier 1 Recommendations (Best Data Quality - Requires Raster Pipeline)
 
-### Tier 1 Recommendations (Best Data Quality - Requires Pipeline Rewrite)
-
-#### 1. **WorldPop (Constrained Top-Down)** - BEST DATA QUALITY
+#### 1. **WorldPop (Constrained Top-Down)** - PRIMARY RECOMMENDATION
 
 **Why:**
 - ✅ Actively maintained with annual updates
@@ -436,19 +436,18 @@ See [Conclusion & Recommendations](#conclusion--recommendations) for detailed op
 - ✅ Excellent documentation and support
 
 **Challenges:**
-- ❌ **MAJOR: Complete pipeline rewrite required** (raster → admin centroids)
-- ⚠️ Processing overhead for large datasets
-- ⚠️ Different data model than GPW (fundamental workflow changes)
-- ⚠️ Ongoing maintenance for each data release
+- ⚠️ Requires alternate raster-to-vector pipeline
+- ⚠️ Slower processing than GPW point data (2-8 hours global, optimizable)
+- ⚠️ Larger file sizes (~15-20 GB for global 100m)
 
 **Implementation Path:**
 1. Download country-level constrained WorldPop datasets
 2. Use zonal statistics to aggregate population to admin boundaries
 3. Calculate centroids with population sums
 4. Generate point file similar to GPW format
-5. Update Makefile to handle WorldPop data
+5. Add to Makefile (e.g., `make worldpop_admin`)
 
-**Estimated Effort:** High (2-4 weeks for experienced GIS developer, ongoing maintenance)
+**Estimated Effort:** Moderate-High (1-3 weeks initial development, then ~4-8 hours per annual update)
 
 ---
 
@@ -457,22 +456,22 @@ See [Conclusion & Recommendations](#conclusion--recommendations) for detailed op
 **Why:**
 - ✅ Fully open EU-funded program
 - ✅ Regular updates (2-3 years)
-- ✅ Multiple resolutions (1km matches GPW)
+- ✅ Multiple resolutions (1km matches GPW - faster processing!)
 - ✅ Excellent methodology and validation
 - ✅ Can redistribute freely
 - ✅ Part of comprehensive settlement ecosystem
 
 **Challenges:**
-- ❌ **MAJOR: Complete pipeline rewrite required** (raster → admin centroids)
+- ⚠️ Requires alternate raster-to-vector pipeline
 - ⚠️ Updates less frequent than WorldPop (2-3 years vs annual)
 - ⚠️ May underestimate rural populations
 
 **Implementation Path:**
 - Similar to WorldPop
-- Could use 1km resolution for direct GPW replacement
+- Use 1km resolution for faster processing (2GB, ~2-4 hours)
 - Or use 100m for higher accuracy
 
-**Estimated Effort:** High (2-4 weeks for experienced GIS developer, ongoing maintenance)
+**Estimated Effort:** Moderate-High (1-3 weeks initial development, faster updates with 1km resolution)
 
 ---
 
@@ -488,45 +487,41 @@ See [Conclusion & Recommendations](#conclusion--recommendations) for detailed op
 - ✅ Long-term U.S. government funding
 
 **Challenges:**
-- ❌ **MAJOR: Complete pipeline rewrite required** (raster → admin centroids)
+- ⚠️ Requires alternate raster-to-vector pipeline
 - ❌ License restrictions
 - ❌ Cannot redistribute
-- ❌ Ambient population vs residential (conceptual difference)
+- ⚠️ Ambient population vs residential (conceptual difference)
 - ⚠️ May require license for non-research use
 
 **When to Consider:**
 - If the project is pure research
 - If license restrictions are acceptable
 - If highest quality and recency are priority
-- Still requires complete pipeline rewrite
 
 ---
 
-### Tier 3: Pragmatic Option (Minimal Changes)
+### Tier 3: Pragmatic Options
 
-#### 4. **GPW v4.11 + UN Population Projections** - MINIMAL PIPELINE CHANGES
+#### 4. **GPW v4.11 + UN Population Projections** - KEEP EXISTING PIPELINE
 
 **Why:**
-- ✅ **ZERO pipeline changes** - uses existing GPW format
-- ✅ No new tools or processing required
-- ✅ Can generate 2021-2030 estimates quickly
-- ✅ UN WPP provides authoritative growth rates
-- ✅ Quick implementation (1-2 days)
+- ✅ **ZERO new development** - uses existing GPW pipeline
+- ✅ Fast processing (existing workflow)
+- ✅ Can generate 2021-2030 estimates with UN growth rates
+- ✅ Good for fallback or legacy compatibility
 
 **Challenges:**
-- ❌ Not true updated data, only projections
 - ❌ Base data frozen at 2020
-- ❌ Cannot capture structural changes (new admin units, migrations, COVID impacts)
-- ❌ Accuracy degrades over time (5+ years out becomes unreliable)
-- ❌ Not sustainable long-term
+- ❌ Only projections, not true updated data
+- ❌ Cannot capture structural changes
+- ❌ Accuracy degrades over time
 
-**When to Use:**
-- Short-term solution (2-3 years)
-- Limited development resources
-- Need functioning system while planning migration
-- GPW 2020 data still "recent enough" for use case
+**Use Case:**
+- Maintain as fallback alongside raster pipeline
+- Quick processing option
+- Legacy compatibility
 
-**Implementation effort:** Low (1-2 days)
+**Implementation effort:** Low (1-2 days to add UN projection capability)
 
 ---
 
@@ -612,116 +607,185 @@ Current workflow:
 - Direct join to Natural Earth boundaries
 - Simple, fast processing
 
-New workflow (raster-based):
+Alternate workflow (raster-based):
 - More complex preprocessing required
-- Computational overhead
+- Computational overhead (slower processing)
 - Need to recalculate for each new admin boundary dataset
-- But: More flexible, higher accuracy potential
+- But: More flexible, higher accuracy potential, access to actively maintained datasets
+
+### Performance Optimization for Raster-to-Vector Pipeline
+
+**Known Issue:** Raster-to-vector aggregation (zonal statistics) can be very slow for high-resolution global datasets.
+
+**Optimization Strategies:**
+
+1. **Use Lower Resolution Where Possible**
+   - GHS-POP 1km instead of 100m (2GB vs 25GB)
+   - Matches GPW resolution
+   - Significantly faster processing
+
+2. **Process by Country/Region**
+   - Download country-specific WorldPop files instead of global
+   - Process in parallel (multiple regions simultaneously)
+   - Reduce memory requirements
+
+3. **Optimize Zonal Statistics Tools**
+   ```bash
+   # Fast option: rasterstats Python library
+   pip install rasterstats
+   
+   # Use gdal_rasterize for vector-to-raster mask
+   gdal_rasterize -burn 1 -a admin_id admin_boundaries.shp mask.tif
+   
+   # Then use numpy for fast aggregation
+   ```
+
+4. **Use Efficient PostGIS Queries**
+   ```sql
+   -- Create spatial index first
+   CREATE INDEX ON admin_boundaries USING GIST (geom);
+   
+   -- Use ST_SummaryStats for raster aggregation
+   SELECT admin_id, 
+          (ST_SummaryStats(ST_Clip(raster, geom))).sum as population
+   FROM raster_table, admin_boundaries
+   WHERE ST_Intersects(raster, geom)
+   GROUP BY admin_id;
+   ```
+
+5. **Pre-compute and Cache**
+   - Process raster → admin aggregation once per data release
+   - Store results as intermediate files
+   - Reuse for different boundary joins
+
+6. **Use Cloud Processing**
+   - Google Earth Engine has GHS-POP pre-loaded
+   - Can do zonal stats at scale
+   - Export aggregated results
+
+**Estimated Processing Times (approximate):**
+- GHS-POP 1km global → admin units: ~2-4 hours (optimized)
+- WorldPop 100m country → admin units: ~10-30 min per country
+- With parallelization: Process all countries in ~4-8 hours
 
 ---
 
-## Critical Consideration: Pipeline Rewrite Requirements
+## Critical Consideration: Raster vs Point-Based Data
 
 **⚠️ IMPORTANT:** All modern high-quality population datasets (WorldPop, GHS-POP, LandScan) are **raster-based**, while the current metalpop pipeline is built around GPW's **admin centroid point format**. 
 
-### Pipeline Rewrite Implications
+### Alternate Pipeline Approach
 
-**Converting from raster to admin centroids requires:**
-- Complete rewrite of data ingestion pipeline
-- New tools and processing steps (zonal statistics, raster aggregation)
-- Significantly increased processing time and storage requirements
-- Ongoing maintenance burden for each new data release
-- Need for spatial processing expertise
+**An alternate raster-to-vector pipeline can be created** to work with modern datasets:
 
-**This is a major undertaking**, not a simple data source swap.
+**What it requires:**
+- New data ingestion pipeline for raster processing
+- Zonal statistics to aggregate population to admin boundaries
+- Tools: GDAL, PostGIS, Python (rasterio/rasterstats)
+- Increased processing time (slower than point-based)
+- Larger storage requirements (raster files are bigger)
+
+**Trade-offs:**
+- ✅ Access to actively maintained, high-quality datasets
+- ✅ Higher resolution data available
+- ✅ Annual updates (WorldPop) or regular updates (GHS-POP)
+- ⚠️ Slower processing (can be optimized, see performance section)
+- ⚠️ More complex pipeline
+- ⚠️ Needs to run for each new admin boundary dataset
+
+**This is feasible and worth doing** to access current population data, but requires accepting slower processing times.
 
 ### The Fundamental Trade-off
 
-There are **no actively maintained, high-quality alternatives** that provide data in GPW's admin centroid point format. The choice is essentially:
+There are **no actively maintained, high-quality alternatives** that provide data in GPW's admin centroid point format. The choice is:
 
-1. **Accept a pipeline rewrite** → Access to current, actively maintained datasets
-2. **Keep current pipeline** → Use increasingly outdated GPW v4.11 data (frozen at 2020)
+1. **Build alternate raster pipeline** → Access to current, actively maintained datasets (with slower processing)
+2. **Keep current pipeline only** → Use increasingly outdated GPW v4.11 data (frozen at 2020) or projections
+
+Both approaches are valid depending on project needs.
 
 ---
 
 ## Conclusion & Recommendations
 
-Given the pipeline rewrite requirement, recommendations depend on project priorities:
+### Recommended Approach: Dual Pipeline Strategy
 
-### Option A: If Data Currency is Critical (Recommended for Long-term)
+**Primary: WorldPop with Alternate Raster Pipeline** (for current data)
 
-**Primary: WorldPop** (with pipeline rewrite)
-
-Best option IF willing to invest in pipeline changes:
+Build an alternate pipeline for raster-based data:
 - ✅ Actively maintained with annual updates
 - ✅ Highest quality methodology
 - ✅ 2020+ data available
 - ✅ Long-term sustainability
-- ⚠️ **Requires complete pipeline rewrite**
+- ⚠️ Slower processing (2-8 hours for global, can be optimized)
+- ⚠️ Requires new pipeline development
 
-**Implementation effort:** High (2-4 weeks for experienced GIS developer)
+**Implementation effort:** Moderate-High (1-3 weeks)
+- See [Performance Optimization](#performance-optimization-for-raster-to-vector-pipeline) section for speed improvements
+- Use GHS-POP 1km for faster processing vs WorldPop 100m
+
+**Secondary: GHS-POP as alternative**
+- Similar benefits to WorldPop
+- 1km resolution matches GPW (faster processing)
+- Updates every 2-3 years vs annual
 
 ---
 
-### Option B: If Minimizing Changes is Critical (Pragmatic Short-term)
+### Optional: Keep GPW Pipeline for Backwards Compatibility
 
-**Primary: Continue with GPW v4.11 + UN Growth Rates**
+**GPW v4.11 + UN Growth Rates** (legacy/fallback option)
 
-Use existing GPW v4.11 (2020) and apply UN WPP growth projections:
+Can maintain existing GPW pipeline alongside raster pipeline:
 
 **Pros:**
-- ✅ **Zero pipeline changes** - works with existing workflow
-- ✅ No learning curve or new tools needed
-- ✅ UN WPP provides authoritative growth rates
-- ✅ Can generate 2021-2025 estimates programmatically
-- ✅ Quick to implement (1-2 days)
+- ✅ Zero changes to existing workflow
+- ✅ Fast processing (existing pipeline)
+- ✅ Can generate 2021-2025 estimates with UN projections
+- ✅ Fallback if raster processing fails
 
 **Cons:**
-- ❌ Not true updated data, just projections
-- ❌ Cannot capture:
-  - New administrative boundaries
-  - Migration patterns
-  - Urban growth dynamics
-  - COVID-19 impacts
+- ❌ Base data frozen at 2020
+- ❌ Only projections, not true updated data
 - ❌ Accuracy degrades over time
-- ❌ Not sustainable beyond 5 years
 
-**Implementation approach:**
-```python
-# Pseudo-code for updating GPW with UN growth rates
-for each admin_unit in gpw_data:
-    country = admin_unit.country
-    un_growth_rate = get_un_growth_rate(country, 2020, 2025)
-    admin_unit.pop_2025 = admin_unit.pop_2020 * (1 + un_growth_rate)
-```
-
-**Use case:** Projects that need "good enough" data for 2-3 more years while GPW v4.11 is still relatively recent.
+**Use case:** Maintain as fallback or for quick processing while raster pipeline is being developed
 
 ---
 
-### Option C: Hybrid Approach
+### Implementation Recommendation
 
-**Phase 1 (Now):** Use GPW v4.11 + UN projections (no pipeline changes)
-**Phase 2 (6-12 months):** Develop raster processing pipeline for WorldPop
-**Phase 3 (12+ months):** Transition to WorldPop data
+**Phase 1: Develop Raster Pipeline (2-4 weeks)**
+1. Start with test region (e.g., Finland)
+2. Implement zonal statistics workflow
+3. Optimize for performance
+4. Validate against GPW results
 
-This spreads the work and maintains functionality throughout.
+**Phase 2: Production Deployment (1-2 weeks)**
+1. Scale to global coverage
+2. Add to Makefile as `make worldpop_admin` or similar
+3. Document usage and performance characteristics
+4. Set up caching for processed results
+
+**Phase 3: Ongoing (minimal)**
+1. Run raster pipeline annually for WorldPop updates
+2. Cache results for reuse
+3. Keep existing GPW pipeline for reference/fallback
 
 ---
 
 ## Final Recommendation
 
-**For projects that can invest in modernization:** WorldPop (Option A)
-- Best data quality and long-term sustainability
-- Requires significant development effort
+**Build the alternate raster-to-vector pipeline** to access WorldPop or GHS-POP data.
 
-**For projects with limited resources:** GPW v4.11 + UN projections (Option B)
-- Pragmatic short-term solution (2-3 years)
-- Minimal effort, zero pipeline changes
-- Accept that data will become increasingly outdated
+**Why:**
+- Only way to get actively maintained, high-quality population data
+- Processing time is acceptable trade-off (2-8 hours once per year)
+- Can be heavily optimized (see performance section)
+- Provides long-term sustainability
 
-**Reality check:** There is no "drop-in replacement" for GPW that maintains the admin centroid format with active updates. Any move to current data requires either:
-1. Accepting a major pipeline rewrite (raster processing), or
-2. Accepting outdated data (GPW v4.11 + projections)
+**Keep existing GPW pipeline** as fallback or for legacy compatibility:
+- Fast processing when needed
+- Can extend with UN projections for 2021-2025 estimates
+- Useful for validation and comparison
 
-The metalpop project needs to decide which trade-off aligns with its priorities and resources.
+**Reality:** There is no perfect solution. The raster pipeline accepts slower processing in exchange for current data. This is the pragmatic choice for maintaining data quality and relevance.
