@@ -2,6 +2,8 @@
 
 This repo contains a workflow to join population data centroids from SEDAC GPWv4 to global political boundaries such as Natural Earth Vector or GADM, enriched with band data scraped from Metal-Archives.
 
+> **Note:** SEDAC GPW v4 data has been discontinued due to funding cuts. See [POPULATION_DATASETS_EVALUATION.md](POPULATION_DATASETS_EVALUATION.md) for a comprehensive evaluation of alternative global population datasets including WorldPop and GHS-POP.
+
 ## Requirements
 
 Tools:
