@@ -1,55 +1,62 @@
 'use client';
 
+import { useState } from 'react';
+
 interface GenreFilterProps {
   selectedGenre: string;
   onGenreChange: (genre: string) => void;
 }
 
 const genres = [
-  { id: 'all', name: 'All Metal' },
-  { id: 'death', name: 'Death Metal' },
-  { id: 'black', name: 'Black Metal' },
-  { id: 'heavy', name: 'Heavy Metal' },
-  { id: 'thrash', name: 'Thrash Metal' },
-  { id: 'power', name: 'Power Metal' },
-  { id: 'doom', name: 'Doom Metal' },
-  { id: 'progressive', name: 'Progressive Metal' },
+  { id: 'all', name: 'All Genres' },
+  { id: 'death', name: 'Death' },
+  { id: 'black', name: 'Black' },
+  { id: 'heavy', name: 'Heavy' },
+  { id: 'thrash', name: 'Thrash' },
+  { id: 'power', name: 'Power' },
+  { id: 'doom', name: 'Doom' },
+  { id: 'progressive', name: 'Progressive' },
 ];
 
 const GenreFilter: React.FC<GenreFilterProps> = ({ selectedGenre, onGenreChange }) => {
+  const [open, setOpen] = useState(false);
+  const currentLabel = genres.find(g => g.id === selectedGenre)?.name ?? 'All Genres';
+
   return (
-    <div className="absolute top-4 left-4 z-10">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4">
-        <h3 className="text-lg font-bold mb-3 text-gray-900 dark:text-white">
-          Filter by Genre
-        </h3>
-        <div className="space-y-2">
+    <div className="absolute top-4 right-4 z-20">
+      {/* Toggle button */}
+      <button
+        onClick={() => setOpen(!open)}
+        className="glass-panel rounded-xl px-4 py-2.5 flex items-center gap-2 hover:bg-white/10 transition-colors cursor-pointer"
+      >
+        <span className="text-xs font-medium uppercase tracking-wider text-neutral-300">Genre</span>
+        <span className="text-xs font-semibold text-accent">{currentLabel}</span>
+        <svg
+          className={`w-3 h-3 text-neutral-400 transition-transform ${open ? 'rotate-180' : ''}`}
+          fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {/* Dropdown */}
+      {open && (
+        <div className="glass-panel rounded-lg mt-1.5 p-1 w-32">
           {genres.map((genre) => (
-            <label
+            <button
               key={genre.id}
-              className="flex items-center gap-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded transition-colors"
+              onClick={() => { onGenreChange(genre.id); setOpen(false); }}
+              className={`w-full text-left px-2.5 py-1.5 rounded text-sm transition-colors cursor-pointer ${
+                selectedGenre === genre.id
+                  ? 'bg-accent/20 text-accent font-medium'
+                  : 'text-neutral-300 hover:bg-white/5 hover:text-white'
+              }`}
             >
-              <input
-                type="radio"
-                name="genre"
-                value={genre.id}
-                checked={selectedGenre === genre.id}
-                onChange={(e) => onGenreChange(e.target.value)}
-                className="w-4 h-4 text-blue-600 focus:ring-blue-500 dark:focus:ring-blue-600"
-              />
-              <span className="text-sm text-gray-900 dark:text-white">
-                {genre.name}
-              </span>
-            </label>
+              {genre.name}
+            </button>
           ))}
         </div>
-        <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-          <p className="text-xs text-gray-500 dark:text-gray-400">
-            Note: Genre-specific data layers require additional data processing.
-            Currently showing all metal bands.
-          </p>
-        </div>
-      </div>
+      )}
     </div>
   );
 };

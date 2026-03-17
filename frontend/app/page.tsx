@@ -8,21 +8,23 @@ export default function Home() {
   const [selectedGenre, setSelectedGenre] = useState('all');
 
   return (
-    <main className="relative w-full h-screen overflow-hidden">
+    <main className="relative w-full h-screen overflow-hidden bg-black">
       <MetalMap selectedGenre={selectedGenre} />
-      <GenreFilter selectedGenre={selectedGenre} onGenreChange={setSelectedGenre} />
-      
+
       {/* Header */}
-      <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-10">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg px-6 py-3">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            MetalPop
+      <div className="absolute top-4 left-4 z-20 flex items-center gap-4">
+        <div className="glass-panel rounded-xl px-5 py-3">
+          <h1 className="font-display text-2xl font-bold tracking-wider text-white uppercase">
+            Metal<span className="text-accent">Pop</span>
           </h1>
-          <p className="text-sm text-gray-600 dark:text-gray-300">
-            Global Metal Band Distribution
+          <p className="text-[11px] tracking-widest uppercase text-neutral-400">
+            Global Band Density
           </p>
         </div>
       </div>
+
+      {/* Genre filter - top right */}
+      <GenreFilter selectedGenre={selectedGenre} onGenreChange={setSelectedGenre} />
     </main>
   );
 }
