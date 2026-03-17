@@ -30,7 +30,14 @@ const MetalMap: React.FC<MetalMapProps> = ({ selectedGenre }) => {
   });
   const [selectedRegion, setSelectedRegion] = useState<RegionData | null>(null);
 
-  const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || '';
+  const rawMapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+  if (!rawMapboxToken) {
+    // Warn when Mapbox access token is not configured; the map will fail to load without it.
+    console.warn(
+      'MetalMap: Environment variable NEXT_PUBLIC_MAPBOX_TOKEN is not set. The Mapbox map may fail to load.'
+    );
+  }
+  const mapboxToken = rawMapboxToken || '';
   const mapboxStyle = process.env.NEXT_PUBLIC_MAPBOX_STYLE || 'mapbox://styles/mapbox/dark-v11';
   const mapboxUser = process.env.NEXT_PUBLIC_MAPBOX_USER || 'yuletide';
 
